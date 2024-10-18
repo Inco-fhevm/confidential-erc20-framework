@@ -1,8 +1,9 @@
+import crypto from "crypto";
 import dotenv from "dotenv";
+import { Fragment, FunctionFragment } from "ethers";
 import { log2 } from "extra-bigint";
 import * as fs from "fs";
-import { ethers } from "hardhat";
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 import { Database } from "sqlite3";
 
 const parsedEnvCoprocessor = dotenv.parse(fs.readFileSync("node_modules/fhevm/lib/.env.exec"));
@@ -19,13 +20,14 @@ const contractABI = JSON.parse(fs.readFileSync("abi/TFHEExecutor.json").toString
 
 const iface = new ethers.Interface(contractABI);
 
-const functions = iface.fragments.filter((fragment) => fragment.type === "function");
+const functions = iface.fragments.filter(function (fragment: Fragment): fragment is FunctionFragment {
+  return fragment.type === "function";
+});
 
 const selectors = functions.reduce((acc, func) => {
-  const signature = `${func.name}(${func.inputs.map((input) => input.type).join(",")})`;
-  acc[func.selector] = signature;
+  acc[func.selector] = `${func.name}(${func.inputs.map((input) => input.type).join(",")})`;
   return acc;
-}, {});
+}, {} as Record<string, string>);
 
 //const db = new Database('./sql.db'); // on-disk db for debugging
 const db = new Database(":memory:");
@@ -148,6 +150,19 @@ const NumBits = {
   11: 2048n, //ebytes256
 };
 
+type BitWidth = keyof typeof NumBits;
+
+function isBitWidth(bw: number): bw is BitWidth {
+  return NumBits[bw as BitWidth] !== undefined;
+}
+
+function mustBeBitWidth(bw: unknown): BitWidth {
+  if (typeof bw !== "number" || !isBitWidth(bw)) {
+    throw new Error("Expected BitWidth but got " + bw);
+  }
+  return bw;
+}
+
 const HANDLE_VERSION = 0;
 
 export function numberToEvenHexString(num: number) {
@@ -195,12 +210,12 @@ async function insertHandle(obj2: EvmState, validIdxes: [number]) {
     let clearLHS;
     let clearRHS;
     let lhsType;
-    let resultType;
+    let resultType: keyof typeof NumBits;
     let shift;
 
     switch (selectors[currentSelector]) {
       case "trivialEncrypt(uint256,bytes1)":
-        resultType = Number(decodedData[1]);
+        resultType = mustBeBitWidth(decodedData[1]);
         clearText = decodedData[0];
         handle = ethers.keccak256(
           ethers.solidityPacked(
