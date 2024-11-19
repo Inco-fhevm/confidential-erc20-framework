@@ -283,22 +283,23 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         burnRqs[requestID] = BurnRq(account, amount);
     }
 
-    error InsufficientBalanceToBurn(address account, uint64 burnAmount);
+    event InsufficientBalanceToBurn(address account, uint64 burnAmount);
 
     function _burnCallback(uint256 requestID, bool hasEnoughBalance) public virtual onlyGateway {
         BurnRq memory burnRequest = burnRqs[requestID];
         address account = burnRequest.account;
         uint64 amount = burnRequest.amount;
+        // Unlock the burn amount unconditionally
+        _lockedBalances[account] = _lockedBalances[account] - amount;
+        delete burnRqs[requestID];
         if (!hasEnoughBalance) {
-            revert InsufficientBalanceToBurn(account, amount);
+            emit InsufficientBalanceToBurn(account, amount);
+            return;
         }
         _totalSupply = _totalSupply - amount;
-        // Unlock the burn amount
-        _lockedBalances[account] = _lockedBalances[account] - amount;
         _balances[account] = TFHE.sub(_balances[account], amount);
         TFHE.allow(_balances[account], address(this));
         TFHE.allow(_balances[account], account);
-        delete burnRqs[requestID];
     }
     /**
      * @dev Sets `value` as the allowance of `spender` over the `owner` s tokens.
