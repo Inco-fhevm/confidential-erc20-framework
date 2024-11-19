@@ -54,6 +54,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
     struct BurnRq {
         address account;
         uint64 amount;
+        bool exists;
     }
 
     mapping(uint256 => BurnRq) public burnRqs;
@@ -253,6 +254,25 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         _totalSupply += value;
     }
 
+    event BurnRequested(uint256 requestId, address account, uint64 amount);
+
+    event BurnRequestCancelled(uint256 requestID);
+
+    error BurnRequestDoesNotExist(uint256 requestId);
+
+    function _cancelBurn(uint256 requestId) internal virtual {
+        BurnRq memory burnRequest = burnRqs[requestId];
+        if (!burnRequest.exists) {
+            revert BurnRequestDoesNotExist(requestId);
+        }
+        address account = burnRequest.account;
+        uint64 amount = burnRequest.amount;
+        // Unlock the burn amount unconditionally
+        _lockedBalances[account] = _lockedBalances[account] - amount;
+        delete burnRqs[requestId];
+        emit BurnRequestCancelled(requestId);
+    }
+
     /**
      * @dev Destroys a `value` amount of tokens from `account`, lowering the total supply.
      * Relies on the `_update` mechanism.
@@ -279,14 +299,18 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
             block.timestamp + 100,
             false
         );
-
-        burnRqs[requestID] = BurnRq(account, amount);
+        burnRqs[requestID] = BurnRq(account, amount, true);
+        emit BurnRequested(requestID, account, amount);
     }
 
     event InsufficientBalanceToBurn(address account, uint64 burnAmount);
 
     function _burnCallback(uint256 requestID, bool hasEnoughBalance) public virtual onlyGateway {
         BurnRq memory burnRequest = burnRqs[requestID];
+        if (!burnRequest.exists) {
+            revert BurnRequestDoesNotExist(requestID);
+            return;
+        }
         address account = burnRequest.account;
         uint64 amount = burnRequest.amount;
         // Unlock the burn amount unconditionally
