@@ -30,6 +30,10 @@ import "fhevm/gateway/GatewayCaller.sol";
 abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metadata, IERC20Errors, GatewayCaller {
     mapping(address account => euint64) public _balances;
 
+    // To safely handle burn requests we must ensure we lock up an amount of token that is in-flight so that the
+    // we can guarantee there will be sufficient balance to be burnt at the point that _burnCallback runs.
+    mapping(address account => uint64) public _lockedBalances;
+
     mapping(address account => mapping(address spender => euint64)) internal _allowances;
 
     uint64 public _totalSupply;
@@ -51,6 +55,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         address account;
         uint64 amount;
     }
+
     mapping(uint256 => BurnRq) public burnRqs;
     /**
      * @dev Returns the name of the token.
@@ -109,8 +114,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
     function transfer(address to, euint64 value) public virtual returns (bool) {
         require(TFHE.isSenderAllowed(value));
         address owner = _msgSender();
-        ebool isTransferable = TFHE.le(value, _balances[msg.sender]);
-        _transfer(owner, to, value, isTransferable);
+        _transfer(owner, to, value, TFHE.asEbool(true));
         return true;
     }
 
@@ -142,6 +146,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         _approve(owner, spender, value);
         return true;
     }
+
     function approve(address spender, einput encryptedAmount, bytes calldata inputProof) public virtual returns (bool) {
         approve(spender, TFHE.asEuint64(encryptedAmount, inputProof));
         return true;
@@ -179,6 +184,17 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
     }
 
     /**
+     * @dev Checks the available balance of an account exceeds amount
+     */
+    function _hasSufficientBalance(address owner, euint64 amount) internal virtual returns (ebool) {
+        return TFHE.le(TFHE.add(amount, _lockedBalances[owner]), _balances[owner]);
+    }
+
+    function _hasSufficientBalance(address owner, uint64 amount) internal virtual returns (ebool) {
+        return _hasSufficientBalance(owner, TFHE.asEuint64(amount));
+    }
+
+    /**
      * @dev Moves a `value` amount of tokens from `from` to `to`.
      *
      * This internal function is equivalent to {transfer}, and can be used to
@@ -195,7 +211,12 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         if (to == address(0)) {
             revert ERC20InvalidReceiver(address(0));
         }
-        euint64 transferValue = TFHE.select(isTransferable, value, TFHE.asEuint64(0));
+        // Enforce sufficient balance constraint universally
+        euint64 transferValue = TFHE.select(
+            TFHE.and(_hasSufficientBalance(from, value), isTransferable),
+            value,
+            TFHE.asEuint64(0)
+        );
         euint64 newBalanceTo = TFHE.add(_balances[to], transferValue);
         _balances[to] = newBalanceTo;
         TFHE.allow(newBalanceTo, address(this));
@@ -244,7 +265,9 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         if (account == address(0)) {
             revert ERC20InvalidReceiver(address(0));
         }
-        ebool enoughBalance = TFHE.le(amount, _balances[account]);
+        // Unconditionally lock the burn amount
+        _lockedBalances[account] = _lockedBalances[account] + amount;
+        ebool enoughBalance = _hasSufficientBalance(account, amount);
         TFHE.allow(enoughBalance, address(this));
         uint256[] memory cts = new uint256[](1);
         cts[0] = Gateway.toUint256(enoughBalance);
@@ -260,14 +283,18 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         burnRqs[requestID] = BurnRq(account, amount);
     }
 
-    function _burnCallback(uint256 requestID, bool decryptedInput) public virtual onlyGateway {
+    error InsufficientBalanceToBurn(address account, uint64 burnAmount);
+
+    function _burnCallback(uint256 requestID, bool hasEnoughBalance) public virtual onlyGateway {
         BurnRq memory burnRequest = burnRqs[requestID];
         address account = burnRequest.account;
         uint64 amount = burnRequest.amount;
-        if (!decryptedInput) {
-            revert("Decryption failed");
+        if (!hasEnoughBalance) {
+            revert InsufficientBalanceToBurn(account, amount);
         }
         _totalSupply = _totalSupply - amount;
+        // Unlock the burn amount
+        _lockedBalances[account] = _lockedBalances[account] - amount;
         _balances[account] = TFHE.sub(_balances[account], amount);
         TFHE.allow(_balances[account], address(this));
         TFHE.allow(_balances[account], account);
@@ -334,14 +361,11 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
      */
     function _decreaseAllowance(address owner, address spender, euint64 amount) internal virtual returns (ebool) {
         euint64 currentAllowance = _allowances[owner][spender];
-
-        ebool allowedTransfer = TFHE.le(amount, currentAllowance);
-
-        ebool canTransfer = TFHE.le(amount, _balances[owner]);
-        ebool isTransferable = TFHE.and(canTransfer, allowedTransfer);
+        ebool isTransferable = TFHE.le(amount, currentAllowance);
         _approve(owner, spender, TFHE.select(isTransferable, TFHE.sub(currentAllowance, amount), currentAllowance));
         return isTransferable;
     }
+
     /**
      * @dev Increases `owner` s allowance for `spender` based on spent `value`.
      *
