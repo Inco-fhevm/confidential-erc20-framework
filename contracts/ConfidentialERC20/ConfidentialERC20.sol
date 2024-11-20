@@ -285,9 +285,9 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         if (account == address(0)) {
             revert ERC20InvalidReceiver(address(0));
         }
-        // Unconditionally lock the burn amount
-        _lockedBalances[account] = _lockedBalances[account] + amount;
         ebool enoughBalance = _hasSufficientBalance(account, amount);
+        // Unconditionally lock the burn amount after calculating sufficient balance
+        _lockedBalances[account] = _lockedBalances[account] + amount;
         TFHE.allow(enoughBalance, address(this));
         uint256[] memory cts = new uint256[](1);
         cts[0] = Gateway.toUint256(enoughBalance);
