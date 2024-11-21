@@ -33,7 +33,8 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
     mapping(address account => mapping(address spender => euint64)) internal _allowances;
 
     uint64 public _totalSupply;
-
+    //mapping for unwrap fulfilment
+    mapping(address => bool) public waitingForUnwrap;
     string private _name;
     string private _symbol;
 
@@ -52,6 +53,11 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         uint64 amount;
     }
     mapping(uint256 => BurnRq) public burnRqs;
+    
+    modifier noUnfulfilledUnwrap(address account) {
+        require(waitingForUnwrap[account] == false, "Waiting for unwrap fulfilment");
+        _;
+    }
     /**
      * @dev Returns the name of the token.
      */
@@ -188,7 +194,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
      *
      * NOTE: This function is not virtual, {_update} should be overridden instead.
      */
-    function _transfer(address from, address to, euint64 value, ebool isTransferable) internal {
+    function _transfer(address from, address to, euint64 value, ebool isTransferable) internal noUnfulfilledUnwrap(from) {
         if (from == address(0)) {
             revert ERC20InvalidSender(address(0));
         }
@@ -240,10 +246,11 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
      *
      * NOTE: This function is not virtual, {_update} should be overridden instead
      */
-    function _requestBurn(address account, uint64 amount) internal virtual {
+    function _requestBurn(address account, uint64 amount) internal noUnfulfilledUnwrap(account) virtual {
         if (account == address(0)) {
             revert ERC20InvalidReceiver(address(0));
         }
+        waitingForUnwrap[account] = true;
         ebool enoughBalance = TFHE.le(amount, _balances[account]);
         TFHE.allow(enoughBalance, address(this));
         uint256[] memory cts = new uint256[](1);
@@ -262,6 +269,8 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
 
     function _burnCallback(uint256 requestID, bool decryptedInput) public virtual onlyGateway {
         BurnRq memory burnRequest = burnRqs[requestID];
+        //check if the burn request exists
+        require(burnRequest.account != address(0), "Burn request does not exist");
         address account = burnRequest.account;
         uint64 amount = burnRequest.amount;
         if (!decryptedInput) {
@@ -269,10 +278,22 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         }
         _totalSupply = _totalSupply - amount;
         _balances[account] = TFHE.sub(_balances[account], amount);
+        waitingForUnwrap[account] = false;
         TFHE.allow(_balances[account], address(this));
         TFHE.allow(_balances[account], account);
         delete burnRqs[requestID];
     }
+    /**
+     * @dev Retries a burn request
+     */
+    function retryBurn(uint256 oldRequest) internal virtual {
+        BurnRq memory burnRequest = burnRqs[oldRequest];
+        require(burnRequest.account == msg.sender, "Only the requester can retry the burn");
+        delete burnRqs[oldRequest];
+        waitingForUnwrap[burnRequest.account] = false;
+        _requestBurn(burnRequest.account, burnRequest.amount); 
+    }
+
     /**
      * @dev Sets `value` as the allowance of `spender` over the `owner` s tokens.
      *
