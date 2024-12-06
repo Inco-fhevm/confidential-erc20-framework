@@ -27,15 +27,24 @@ import "fhevm/gateway/GatewayCaller.sol";
  * conventional and does not conflict with the expectations of ERC-20
  * applications.
  */
+// fixme the standard shouldn't be ownable
+// fixme add events
+// fixme lock-burn bug
 abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metadata, IERC20Errors, GatewayCaller {
-    mapping(address account => euint64) public _balances;
+    mapping(address account => euint64) public _balances; // fixme non standard ?
+    // todo which uint to use ? (cf linked proposal of erc20)
 
     mapping(address account => mapping(address spender => euint64)) internal _allowances;
 
-    uint64 public _totalSupply;
+    uint64 public _totalSupply; // fixme non standard ?
 
     string private _name;
     string private _symbol;
+
+    // todo have approve + send in 1 tx support ?
+    // todo propose the additional ercs of erc20 to add to include as default here
+    // todo imagine generic methods of read delegation (cf work on ACL)
+    // todo check zama default token
 
     /**
      * @dev Sets the values for {name} and {symbol}.
@@ -51,7 +60,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         address account;
         uint64 amount;
     }
-    mapping(uint256 => BurnRq) public burnRqs;
+    mapping(uint256 => BurnRq) public burnRqs; // todo mint and burn in separate contracts
     /**
      * @dev Returns the name of the token.
      */
@@ -67,6 +76,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         return _symbol;
     }
 
+    // todo update com
     /**
      * @dev Returns the number of decimals used to get its user representation.
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
@@ -91,6 +101,8 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         return _totalSupply;
     }
 
+    // fixme fix erc20 ABI conflict
+    // todo erc20 retroCompatibility ?
     /**
      * @dev See {IERC20-balanceOf}.
      */
@@ -98,6 +110,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         return _balances[account];
     }
 
+    // todo : how to std / simplify double implems ?
     /**
      * @dev See {IERC20-transfer}.
      *
@@ -136,8 +149,9 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
      *
      * - `spender` cannot be the zero address.
      */
+    // todo : investigate max approve
     function approve(address spender, euint64 value) public virtual returns (bool) {
-        require(TFHE.isSenderAllowed(value));
+        require(TFHE.isSenderAllowed(value)); // todo : use a modifier ?
         address owner = _msgSender();
         _approve(owner, spender, value);
         return true;
