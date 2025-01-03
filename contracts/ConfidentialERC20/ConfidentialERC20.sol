@@ -27,16 +27,17 @@ import "fhevm/gateway/GatewayCaller.sol";
  * conventional and does not conflict with the expectations of ERC-20
  * applications.
  */
-// fixme the standard shouldn't be ownable
-// fixme add events
-// fixme lock-burn bug
+// todo the standard shouldn't be ownable
+// todo add events
+// todo lock-burn bug
+// todo extract mint and burn in separate contract
 abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metadata, IERC20Errors, GatewayCaller {
-    mapping(address account => euint64) public _balances; // fixme non standard ?
+    mapping(address account => euint64) public _balances; // todo non standard ?
     // todo which uint to use ? (cf linked proposal of erc20)
 
     mapping(address account => mapping(address spender => euint64)) internal _allowances;
 
-    uint64 public _totalSupply; // fixme non standard ?
+    uint64 public _totalSupply; // todo non standard ?
 
     string private _name;
     string private _symbol;
@@ -45,6 +46,8 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
     // todo propose the additional ercs of erc20 to add to include as default here
     // todo imagine generic methods of read delegation (cf work on ACL)
     // todo check zama default token
+    // todo advocate bytes32 for handles
+    // todo fix burn request system
 
     /**
      * @dev Sets the values for {name} and {symbol}.
@@ -77,6 +80,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
     }
 
     // todo update com
+    // todo investigate decimals strategy
     /**
      * @dev Returns the number of decimals used to get its user representation.
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
@@ -101,7 +105,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         return _totalSupply;
     }
 
-    // fixme fix erc20 ABI conflict
+    // todo fix erc20 ABI conflict
     // todo erc20 retroCompatibility ?
     /**
      * @dev See {IERC20-balanceOf}.
@@ -150,6 +154,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
      * - `spender` cannot be the zero address.
      */
     // todo : investigate max approve
+    // todo investigate what happens on eoa call
     function approve(address spender, euint64 value) public virtual returns (bool) {
         require(TFHE.isSenderAllowed(value)); // todo : use a modifier ?
         address owner = _msgSender();
@@ -246,6 +251,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
         _totalSupply += value;
     }
 
+    // todo : parametrize gateway callback time
     /**
      * @dev Destroys a `value` amount of tokens from `account`, lowering the total supply.
      * Relies on the `_update` mechanism.
