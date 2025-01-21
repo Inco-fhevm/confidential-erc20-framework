@@ -51,24 +51,32 @@ contract ConfidentialERC20Wrapper is ConfidentialToken {
         _requestBurn(msg.sender, uint64(amount));
     }
 
-    function _burnCallback(uint256 requestID, bool decryptedInput) public virtual override onlyGateway {
+    function _burnCallback(uint256 requestID, bool hasEnoughBalance) public override onlyGateway {
         BurnRq memory burnRequest = burnRqs[requestID];
+        if (!burnRequest.exists) {
+            revert BurnRequestDoesNotExist(requestID);
+        }
         address account = burnRequest.account;
         uint64 amount = burnRequest.amount;
-
-        if (!decryptedInput) {
-            revert("Decryption failed");
+        // Unlock the burn amount unconditionally
+        _lockedBalances[account] = _lockedBalances[account] - amount;
+        delete burnRqs[requestID];
+        if (!hasEnoughBalance) {
+            emit InsufficientBalanceToBurn(account, amount);
+            return;
         }
-
-        // Call base ERC20 transfer and emit Unwrap event
-        baseERC20.safeTransfer(account, amount);
-        emit Unwrap(account, amount);
-
-        // Continue with the burn logic
-        _totalSupply -= amount;
+        _totalSupply = _totalSupply - amount;
         _balances[account] = TFHE.sub(_balances[account], amount);
         TFHE.allow(_balances[account], address(this));
         TFHE.allow(_balances[account], account);
-        delete burnRqs[requestID];
+        baseERC20.safeTransfer(account, amount);
     }
+
+    function setUnwrapStatus(address account, bool status) 
+        external
+        onlyOwner
+    {
+        unwrapDisabled[account] = status;
+    }
+
 }

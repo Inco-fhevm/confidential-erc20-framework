@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-// OpenZeppelin Contracts (last updated v5.0.0) (interfaces/draft-IERC6093.sol)
+
 pragma solidity ^0.8.24;
 import "fhevm/lib/TFHE.sol";
 /**

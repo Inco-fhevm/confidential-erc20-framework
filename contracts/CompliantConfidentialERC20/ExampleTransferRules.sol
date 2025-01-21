@@ -10,7 +10,7 @@ contract ExampleTransferRules is ITransferRules, Ownable2Step {
     Identity public immutable identityContract;
     uint8 private minimumAge;
     uint64 public constant transferLimit = (20000 * 10 ** 6);
-    euint64 public TRANSFER_LIMIT = TFHE.asEuint64(transferLimit); // 20,000 tokens with 6 decimals
+
 
     mapping(address => bool) public userBlocklist;
 

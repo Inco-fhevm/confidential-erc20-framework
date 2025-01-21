@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-// OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/IERC20.sol)
-import "fhevm/lib/TFHE.sol";
-
 pragma solidity ^0.8.24;
 
+import "fhevm/lib/TFHE.sol";
 /**
  * @dev Interface of the ERC-20 standard as defined in the ERC.
  */
