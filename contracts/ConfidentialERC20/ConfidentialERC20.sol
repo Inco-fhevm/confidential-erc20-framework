@@ -31,6 +31,7 @@ import "fhevm/gateway/GatewayCaller.sol";
 // todo add events
 // todo lock-burn bug
 // todo extract mint and burn in separate contract
+// todo implement an error flag system
 abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metadata, IERC20Errors, GatewayCaller {
     mapping(address account => euint64) public _balances; // todo non standard ?
     // todo which uint to use ? (cf linked proposal of erc20)
