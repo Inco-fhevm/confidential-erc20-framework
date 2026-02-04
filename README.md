@@ -47,6 +47,8 @@ pnpm test:rivest
 ```
 #### Resources
 
+- Islamic finance proposal (Zakat Shield): [docs/islamic-finance-zakat-shield.md](docs/islamic-finance-zakat-shield.md)
+
 - Block explorer: [https://explorer.rivest.inco.org/](https://explorer.rivest.inco.org/);
 - Faucet: [https://faucet.rivest.inco.org/](https://faucet.rivest.inco.org/);
 - RPC endpoint: [https://validator.rivest.inco.org](https://validator.rivest.inco.org).
