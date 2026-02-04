@@ -11,7 +11,7 @@ contract Identity is Ownable {
     event IdentityRegistered(address indexed user);
     event dateOfBirthUpdated(address indexed user);
 
-    constructor(address initialOwner) Ownable(initialOwner) {}
+    constructor() {}
 
     // Register identity with encrypted Date of Birth (DOB)
     function registerIdentity(address user, einput encryptedDOB, bytes calldata inputProof) external onlyOwner {

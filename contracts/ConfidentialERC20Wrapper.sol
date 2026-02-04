@@ -6,8 +6,7 @@ import "fhevm/gateway/GatewayCaller.sol";
 import { ConfidentialToken } from "./ConfidentialERC20/ConfidentialToken.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-interface IERC20extended is IERC20 {
+interface IERC20Extended is IERC20 {
     function decimals() external view returns (uint8);
 }
 
@@ -23,7 +22,7 @@ contract ConfidentialERC20Wrapper is ConfidentialToken {
     error UnwrapNotAllowed(address account);
 
     constructor(address _baseERC20) ConfidentialToken("Wrapped cERC20", "wcERC20") {
-        uint8 baseERCdecimals = IERC20extended(_baseERC20).decimals();
+        uint8 baseERCdecimals = IERC20Extended(_baseERC20).decimals();
         require(baseERCdecimals <= 6, "Base ERC20 token must have 6 or less decimals");
         baseERC20 = IERC20(_baseERC20);
         _decimals = baseERCdecimals;

@@ -15,7 +15,7 @@ export async function deployCompliantERC20Fixture(): Promise<{
   const RulesContract = await ethers.getContractFactory("ExampleTransferRules");
 
   // Deploy the Identity contract
-  const identity = await IdentityContract.connect(signers.alice).deploy();
+  const identity = await IdentityContract.connect(signers.alice).deploy(signers.alice.address);
   await identity.waitForDeployment();
 
   // Deploy the TransferRules contract

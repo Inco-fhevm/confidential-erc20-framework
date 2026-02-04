@@ -20,7 +20,7 @@ cp .env.example .env
 
 If you don't already have a mnemonic, you can use this [website](https://iancoleman.io/bip39/) to generate one.
 
-Then, proceed with installing dependencies - please **_make sure to use Node v20_** or more recent or this will fail:
+Then, proceed with installing dependencies - please **make sure to use Node v20** or more recent or this will fail:
 
 ```sh
 pnpm install
