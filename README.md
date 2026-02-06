@@ -51,3 +51,7 @@ pnpm test:rivest
 - Faucet: [https://faucet.rivest.inco.org/](https://faucet.rivest.inco.org/);
 - RPC endpoint: [https://validator.rivest.inco.org](https://validator.rivest.inco.org).
 - Gateway endpoint: [https://gateway.rivest.inco.org](https://gateway.rivest.inco.org).
+
+## Community Resources
+
+- **[The Complete FHE Developer Guide](https://github.com/dolepee/universal-fhe-guide)** - Cross-platform guide to building private smart contracts with FHE. Covers Inco Lightning architecture, confidential token deployment on Base Sepolia, side-by-side platform comparison, and best practices for encrypted smart contract development.
