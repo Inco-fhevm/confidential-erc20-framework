@@ -26,6 +26,12 @@ Then, proceed with installing dependencies - please **_make sure to use Node v20
 pnpm install
 ```
 
+### Choose the right network path
+
+- Use this repository when you want to work with the Confidential ERC20 framework on **Rivest testnet**.
+- If your target is **Inco Lightning (Base Sepolia)**, start from the dedicated template: [Inco Lite Template](https://github.com/Inco-fhevm/inco-lite-template).
+- Keeping the network/tooling path explicit helps avoid mixing setup steps between Rivest and Lightning environments.
+
 ## For development on Rivest testnet
 
 After installation run the pre-launch script to setup the environment:
