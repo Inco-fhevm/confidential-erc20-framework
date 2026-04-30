@@ -7,7 +7,7 @@ Note: This repository is not audited and is intended solely as a proof of concep
 
 ## Usage
 
-### Pre Requisites
+### Prerequisites
 
 Install [pnpm](https://pnpm.io/installation)
 
