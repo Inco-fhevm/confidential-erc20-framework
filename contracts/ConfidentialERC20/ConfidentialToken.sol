@@ -11,6 +11,15 @@ contract ConfidentialToken is ConfidentialERC20 {
     address private _owner;
 
     /**
+     * @dev Restricts a function to the current {owner}. Self-contained here
+     * so the base {ConfidentialERC20} carries no access-control role.
+     */
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "Only owner");
+        _;
+    }
+
+    /**
      * @dev Sets the initial values for {name} and {symbol}, and assigns ownership to the deployer.
      */
     constructor(string memory name_, string memory symbol_) ConfidentialERC20(name_, symbol_) {
@@ -21,8 +30,7 @@ contract ConfidentialToken is ConfidentialERC20 {
      * @dev Mint new tokens.
      *
      */
-    function mint(address to, uint64 amount) public {
-        require(msg.sender == _owner, "Only owner");
+    function mint(address to, uint64 amount) public onlyOwner {
         _mint(to, amount);
     }
 
@@ -30,8 +38,7 @@ contract ConfidentialToken is ConfidentialERC20 {
      * @dev Burn tokens from an account.
      *
      */
-    function burn(address from, uint64 amount) public {
-        require(msg.sender == _owner, "Only owner");
+    function burn(address from, uint64 amount) public onlyOwner {
         burn(from, amount);
     }
 
@@ -39,15 +46,14 @@ contract ConfidentialToken is ConfidentialERC20 {
      * @dev Change the owner
      *
      */
-    function transferOwnership(address newOwner) public override {
-        require(msg.sender == _owner, " Only owner");
+    function transferOwnership(address newOwner) public virtual onlyOwner {
         _owner = newOwner;
     }
 
     /**
      * @dev Get the owner of the contract.
      */
-    function owner() public view override returns (address) {
+    function owner() public view virtual returns (address) {
         return _owner;
     }
 }
