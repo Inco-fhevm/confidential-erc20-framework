@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 
 import { IConfidentialERC20 } from "./Interfaces/IConfidentialERC20.sol";
 import { IERC20Metadata } from "./Utils/IERC20Metadata.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { Context } from "./Utils/Context.sol";
 import { IERC20Errors } from "./Utils/IERC6093.sol";
 import "fhevm/lib/TFHE.sol";
 import "fhevm/gateway/GatewayCaller.sol";
@@ -27,7 +27,7 @@ import "fhevm/gateway/GatewayCaller.sol";
  * conventional and does not conflict with the expectations of ERC-20
  * applications.
  */
-abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metadata, IERC20Errors, GatewayCaller {
+abstract contract ConfidentialERC20 is Context, IConfidentialERC20, IERC20Metadata, IERC20Errors, GatewayCaller {
     mapping(address account => euint64) public _balances;
 
     mapping(address account => mapping(address spender => euint64)) internal _allowances;
@@ -43,7 +43,7 @@ abstract contract ConfidentialERC20 is Ownable, IConfidentialERC20, IERC20Metada
      * All two of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory name_, string memory symbol_) Ownable(msg.sender) {
+    constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
     }
