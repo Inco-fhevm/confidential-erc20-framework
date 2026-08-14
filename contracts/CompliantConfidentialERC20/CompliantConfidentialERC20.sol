@@ -51,6 +51,7 @@ contract CompliantConfidentialERC20 is ConfidentialToken {
     function _transfer(address from, address to, euint64 _amount) internal {
         euint64 newBalanceFrom = TFHE.sub(_balances[from], _amount);
         _balances[from] = newBalanceFrom;
+        TFHE.allow(newBalanceFrom, address(this));
         TFHE.allow(newBalanceFrom, from);
 
         euint64 newBalanceTo = TFHE.add(_balances[to], _amount);
