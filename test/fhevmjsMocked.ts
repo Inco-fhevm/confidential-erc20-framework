@@ -148,7 +148,7 @@ export const createEncryptedInputMocked = (contractAddress: string, callerAddres
       if (value == null) throw new Error("Missing value");
       if (typeof value !== "boolean" && typeof value !== "number" && typeof value !== "bigint")
         throw new Error("The value must be a boolean, a number or a bigint.");
-      if ((typeof value !== "bigint" || typeof value !== "number") && Number(value) > 1)
+      if ((typeof value === "number" || typeof value === "bigint") && Number(value) > 1)
         throw new Error("The value must be 1 or 0.");
       values.push(BigInt(value));
       bits.push(1);
