@@ -48,7 +48,7 @@ const ifaceEventDecryption = new ethers.Interface([
   "event EventDecryption(uint256 indexed requestID, uint256[] cts, address contractCaller, bytes4 callbackSelector, uint256 msgValue, uint256 maxTimestamp, bool passSignaturesToCaller)",
 ]);
 
-const gateway = GatewayContract__factory.connect(parsedEnv.GATEWAY_CONTRACT_PREDEPLOY_ADDRESS);
+const gateway = GatewayContract__factory.connect(parsedEnv.GATEWAY_CONTRACT_PREDEPLOY_ADDRESS, ethers.provider);
 
 const ifaceResultCallback = GatewayContract__factory.createInterface();
 let firstBlockListening: number;
@@ -136,7 +136,7 @@ const fulfillAllPastRequestsIds = async (mocked: boolean) => {
         await awaitCoprocessor();
 
         // first check that all handles are allowed for decryption
-        const acl = ACL__factory.connect(`0x${aclAdd}`);
+        const acl = ACL__factory.connect(`0x${aclAdd}`, ethers.provider);
         const isAllowedForDec = await Promise.all(handles.map(async (handle) => acl.allowedForDecryption(handle)));
         if (!allTrue(isAllowedForDec)) {
           throw new Error("Some handle is not authorized for decryption");
