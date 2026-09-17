@@ -121,7 +121,7 @@ export const reencryptRequestMocked = async (
   }
 
   // ACL checking
-  const acl = ACL__factory.connect(`0x${aclAdd}`);
+  const acl = ACL__factory.connect(`0x${aclAdd}`, hre.ethers.provider);
   const userAllowed = await acl.persistAllowed(handle, userAddress);
   const contractAllowed = await acl.persistAllowed(handle, contractAddress);
   const isAllowed = userAllowed && contractAllowed;
