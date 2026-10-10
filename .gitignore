@@ -26,3 +26,15 @@ yarn.lock
 
 res/
 running_node/
+
+# Foundry
+out/
+cache/
+lib/
+broadcast/
+
+# Foundry
+out/
+cache/
+broadcast/
+!lib/forge-std

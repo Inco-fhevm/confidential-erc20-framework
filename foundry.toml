@@ -1,0 +1,18 @@
+# Foundry configuration for the confidential-erc20-framework.
+# Complements the existing Hardhat setup (issue #21). Dependencies are
+# resolved from node_modules (install with `pnpm install`), so no `forge
+# install` / git submodules are required.
+[profile.default]
+src = "contracts"
+test = "test/foundry"
+out = "out"
+libs = ["node_modules", "lib"]
+solc = "0.8.24"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 800
+remappings = [
+    "fhevm/=node_modules/fhevm/",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "forge-std/=lib/forge-std/src/",
+]
